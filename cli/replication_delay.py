@@ -12,7 +12,7 @@ logger = logging.getLogger("replication_queue")
 logger.setLevel(logging.INFO)
 
 
-def _is_replication_queue_empty(host: str, port: str, allowed_delay: int):
+def _is_replication_delay_acceptable(host: str, port: str, allowed_delay: int):
     response = requests.post(
         url=f"http://{host}:{port}",
         params={"query": "SELECT value FROM system.asynchronous_metrics where metric = 'ReplicasMaxAbsoluteDelay'"}
@@ -26,15 +26,13 @@ def _is_replication_queue_empty(host: str, port: str, allowed_delay: int):
 @click.option("--delay")
 @click.option("--timeout", default=DEFAULT_TIMEOUT_THRESHOLD)
 @click.option("--poll", default=DEFAULT_POLL_PERIOD)
-def check_replication_queue(host: str, port: str, delay: int, timeout: int, poll: int):
+def replication_delay(host: str, port: str, delay: int, timeout: int, poll: int):
     try:
-        waiting.wait(lambda: _is_replication_queue_empty(host, port, delay), sleep_seconds=poll, timeout_seconds=timeout)
+        waiting.wait(lambda: _is_replication_delay_acceptable(host, port, delay), sleep_seconds=poll, timeout_seconds=timeout)
     except waiting.TimeoutExpired:
-        logger.error("Replication queue still non-empty at the end of %s seconds" % timeout)
+        logger.error("Replication delay is still greater than %s seconds at the end of %s seconds" % (delay, timeout))
         sys.exit(1)
     else:
-        logger.info("Replication queue is empty")
+        logger.info("Replication delay is under %s seconds" % delay)
         sys.exit(0)
 
-if __name__ == '__main__':
-    check_replication_queue()

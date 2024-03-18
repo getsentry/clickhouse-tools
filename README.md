@@ -6,5 +6,6 @@
 
 ```shell
 make install
+python setup.py install
 ```
 

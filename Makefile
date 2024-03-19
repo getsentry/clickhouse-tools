@@ -1,4 +1,3 @@
 install:
-	pip install -r requirements.txt
-	pip install `grep ^-- requirements.txt` -e .
+	pip install -r requirements.txt -e .
 .PHONY: install
